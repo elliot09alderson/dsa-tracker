@@ -14,6 +14,8 @@ import { useState } from 'react';
 import CodeEditor from '@/components/CodeEditor';
 import { COMPANY_BY_KEY } from '@/data/problems';
 import { useProgress } from '@/lib/useProgress';
+import { topicColor } from '@/lib/topicColors';
+import { highlightCode } from '@/lib/highlightCode';
 import type { Problem, Solution } from '@/lib/types';
 
 const DIFFICULTY_COLOR = {
@@ -57,7 +59,9 @@ export default function ProblemView({ problem, solution, prevId, nextId }: Props
           ← All problems
         </Link>
         <span className="text-muted">/</span>
-        <span className="text-sm text-muted">{problem.topicLabel}</span>
+        <span className="text-sm font-medium" style={{ color: topicColor(problem.topic) }}>
+          {problem.topicLabel}
+        </span>
 
         <div className="ml-auto flex gap-2">
           {prevId && (
@@ -84,6 +88,15 @@ export default function ProblemView({ problem, solution, prevId, nextId }: Props
           <h1 className="text-xl font-bold tracking-tight">{problem.title}</h1>
           <span className={`text-sm font-semibold ${DIFFICULTY_COLOR[problem.difficulty]}`}>
             {problem.difficulty}
+          </span>
+          <span
+            className="rounded px-1.5 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: `${topicColor(problem.topic)}22`,
+              color: topicColor(problem.topic),
+            }}
+          >
+            {problem.topicLabel}
           </span>
         </div>
 
@@ -227,7 +240,7 @@ export default function ProblemView({ problem, solution, prevId, nextId }: Props
                       {copied ? 'Copied' : 'Copy'}
                     </button>
                     <pre className="mono max-h-[480px] overflow-auto rounded-md bg-bg p-3 text-[13px] leading-relaxed">
-                      {approach.code}
+                      <code>{highlightCode(approach.code)}</code>
                     </pre>
                   </div>
                 </div>

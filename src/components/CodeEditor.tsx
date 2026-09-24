@@ -8,6 +8,14 @@
  * editor behaviours that matter are Tab-to-indent and the code surviving a
  * reload. Both are handled here.
  *
+ * Syntax colouring is the classic transparent-textarea trick, not a real
+ * editor widget: a highlighted <pre> sits behind the textarea, the textarea's
+ * own text is painted transparent (only its caret stays visible), and the two
+ * are kept pixel-aligned by sharing identical font/padding and by copying the
+ * textarea's scroll position onto the <pre> on every scroll. Typing, the
+ * caret, and text selection are all still the browser's native textarea
+ * behaviour -- only the paint colour changes.
+ *
  * Two ways to execute:
  *   Run tests -- calls your function against the problem's cases and reports
  *                pass/fail. Available when the problem ships test cases.
@@ -15,8 +23,9 @@
  *                something without a harness.
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { runTests, stripTypes, type TestOutcome } from '@/lib/runTests';
+import { highlightCode } from '@/lib/highlightCode';
 import type { TestCase } from '@/lib/types';
 
 interface Props {
@@ -33,8 +42,16 @@ export default function CodeEditor({ value, onChange, onReset, tests, functionNa
   const [logs, setLogs] = useState<string[]>([]);
   const [outcomes, setOutcomes] = useState<TestOutcome[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const highlightRef = useRef<HTMLPreElement>(null);
 
   const canTest = Boolean(tests?.length && functionName);
+
+  /** Keeps the highlighted layer scrolled to match the (invisible) textarea text on top of it. */
+  const syncHighlightScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (!highlightRef.current) return;
+    highlightRef.current.scrollTop = e.currentTarget.scrollTop;
+    highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
+  };
 
   /** Tab should indent, not move focus out of the editor. */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -139,14 +156,28 @@ export default function CodeEditor({ value, onChange, onReset, tests, functionNa
         </div>
       </div>
 
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        spellCheck={false}
-        placeholder="Write your solution here…"
-        className="mono min-h-70 flex-1 resize-none bg-surface p-3 text-[13px] leading-relaxed outline-none placeholder:text-muted"
-      />
+      {/* The highlighted <pre> sits behind the textarea; the textarea's own
+          text is transparent, so this shows through as the "colour" of what
+          you type. Both share identical font/padding so they line up. */}
+      <div className="relative min-h-70 flex-1 bg-surface">
+        <pre
+          ref={highlightRef}
+          aria-hidden="true"
+          className="mono pointer-events-none absolute inset-0 overflow-hidden p-3 text-[13px] leading-relaxed whitespace-pre-wrap"
+        >
+          <code>{highlightCode(value)}</code>
+          {'\n' /* keeps a trailing blank line from visually collapsing */}
+        </pre>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onScroll={syncHighlightScroll}
+          spellCheck={false}
+          placeholder="Write your solution here…"
+          className="mono absolute inset-0 resize-none bg-transparent p-3 text-[13px] leading-relaxed text-transparent caret-[var(--text)] outline-none placeholder:text-muted"
+        />
+      </div>
 
       {/* A compile error or a missing function name, shown before any results. */}
       {error !== null && (

@@ -22,6 +22,7 @@ import {
 import { SOLUTION_COUNT } from '@/data/solutions';
 import { useProgress } from '@/lib/useProgress';
 import SectionNav from '@/components/SectionNav';
+import { topicColor } from '@/lib/topicColors';
 import type { Difficulty } from '@/lib/types';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'revisit';
@@ -31,6 +32,7 @@ const DIFFICULTY_COLOR: Record<Difficulty, string> = {
   Medium: 'text-medium',
   Hard: 'text-hard',
 };
+
 
 export default function Dashboard() {
   const { solvedIds, revisitIds, toggleSolved, ready } = useProgress();
@@ -241,6 +243,21 @@ export default function Dashboard() {
                     aria-label={`Mark ${p.title} solved`}
                     className="size-4 shrink-0 cursor-pointer accent-[var(--accent)]"
                   />
+
+                  {/* Which topic this problem falls under -- kept on the left,
+                      away from the company/difficulty chips on the right, so
+                      it reads as "where this lives" rather than mixing into
+                      the "who asks this" and "how hard" tags. Most useful
+                      when "All topics" is selected and the list is mixed. */}
+                  <span
+                    className="hidden shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium sm:inline-block"
+                    style={{
+                      backgroundColor: `${topicColor(p.topic)}22`,
+                      color: topicColor(p.topic),
+                    }}
+                  >
+                    {p.topicLabel}
+                  </span>
 
                   <Link
                     href={`/problems/${p.id}`}
