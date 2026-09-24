@@ -23,6 +23,7 @@ import { SOLUTION_COUNT } from '@/data/solutions';
 import { useProgress } from '@/lib/useProgress';
 import SectionNav from '@/components/SectionNav';
 import { topicColor } from '@/lib/topicColors';
+import { topicKeyToSlug } from '@/lib/topicSlug';
 import type { Difficulty } from '@/lib/types';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'revisit';
@@ -150,18 +151,28 @@ export default function Dashboard() {
             const inTopic = PROBLEMS.filter((p) => p.topic === t.key);
             const done = inTopic.filter((p) => solvedIds.has(p.id)).length;
             return (
-              <button
-                key={t.key}
-                onClick={() => setTopic(topic === t.key ? null : t.key)}
-                className={`mb-0.5 flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-sm transition ${
-                  topic === t.key ? 'bg-accent/15 text-accent' : 'text-text hover:bg-surface-2'
-                }`}
-              >
-                <span className="truncate">{t.label}</span>
-                <span className="ml-2 shrink-0 rounded bg-bg px-1.5 py-0.5 text-[10px] text-muted tabular-nums">
-                  {done}/{inTopic.length}
-                </span>
-              </button>
+              <div key={t.key} className="mb-0.5 flex items-center gap-0.5">
+                <button
+                  onClick={() => setTopic(topic === t.key ? null : t.key)}
+                  className={`flex min-w-0 flex-1 items-center justify-between rounded-md px-2.5 py-1.5 text-left text-sm transition ${
+                    topic === t.key ? 'bg-accent/15 text-accent' : 'text-text hover:bg-surface-2'
+                  }`}
+                >
+                  <span className="truncate">{t.label}</span>
+                  <span className="ml-2 shrink-0 rounded bg-bg px-1.5 py-0.5 text-[10px] text-muted tabular-nums">
+                    {done}/{inTopic.length}
+                  </span>
+                </button>
+                {/* A real, crawlable page for this topic -- distinct from the
+                    filter button, which just narrows the list on this page. */}
+                <Link
+                  href={`/topics/${topicKeyToSlug(t.key)}`}
+                  title={`${t.label} — dedicated topic page`}
+                  className="shrink-0 rounded-md p-1.5 text-muted transition hover:bg-surface-2 hover:text-accent"
+                >
+                  ↗
+                </Link>
+              </div>
             );
           })}
         </FilterGroup>
