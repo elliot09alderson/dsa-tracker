@@ -15,21 +15,33 @@ import { arrays3Solutions } from './arrays-3';
 import { arrays4Solutions } from './arrays-4';
 import { arrays2Solutions } from './arrays-2';
 import { twoPointersSolutions } from './two-pointers';
+import { twoPointers2Solutions } from './two-pointers-2';
 import { stacksSolutions } from './stacks';
+import { stacks2Solutions } from './stacks-2';
 import { linkedListSolutions } from './linked-lists';
 import { linkedList2Solutions } from './linked-lists-2';
 import { treesSolutions } from './trees';
 import { trees2Solutions } from './trees-2';
 import { graphsSolutions } from './graphs';
+import { graphs2Solutions } from './graphs-2';
 import { dpSolutions } from './dynamic-programming';
+import { dynamicProgramming2Solutions } from './dynamic-programming-2';
 import { binarySearchSolutions } from './binary-search';
+import { searching2Solutions } from './searching-2';
 import { backtrackingSolutions } from './backtracking';
+import { backtracking2Solutions } from './backtracking-2';
 import { stringsSolutions } from './strings';
+import { strings2Solutions } from './strings-2';
 import { bitManipulationSolutions } from './bit-manipulation';
 import { heapsSolutions } from './heaps';
+import { heaps2Solutions } from './heaps-2';
 import { greedySolutions } from './greedy';
+import { greedy2Solutions } from './greedy-2';
 import { sortingSolutions } from './sorting';
+import { sorting2Solutions } from './sorting-2';
 import { hashingQueueSolutions } from './hashing-queues';
+import { hashing2Solutions } from './hashing-2';
+import { queues2Solutions } from './queues-2';
 
 const ALL: Solution[] = [
   ...arraysSolutions,
@@ -37,21 +49,33 @@ const ALL: Solution[] = [
   ...arrays4Solutions,
   ...arrays2Solutions,
   ...twoPointersSolutions,
+  ...twoPointers2Solutions,
   ...stacksSolutions,
+  ...stacks2Solutions,
   ...linkedListSolutions,
   ...linkedList2Solutions,
   ...treesSolutions,
   ...trees2Solutions,
   ...graphsSolutions,
+  ...graphs2Solutions,
   ...dpSolutions,
+  ...dynamicProgramming2Solutions,
   ...binarySearchSolutions,
+  ...searching2Solutions,
   ...backtrackingSolutions,
+  ...backtracking2Solutions,
   ...stringsSolutions,
+  ...strings2Solutions,
   ...bitManipulationSolutions,
   ...heapsSolutions,
+  ...heaps2Solutions,
   ...greedySolutions,
+  ...greedy2Solutions,
   ...sortingSolutions,
+  ...sorting2Solutions,
   ...hashingQueueSolutions,
+  ...hashing2Solutions,
+  ...queues2Solutions,
 ];
 
 // Merge the test cases in, so a solution file never has to carry them.
