@@ -40,9 +40,16 @@ export async function progressCollection(): Promise<Collection<ProgressRecord>> 
   return client.db(dbName).collection<ProgressRecord>('progress');
 }
 
-/**
- * There is no login, so all progress lives under one well-known id. When you
- * add accounts later, replace this with the signed-in user's id and the rest
- * of the code is unchanged.
- */
-export const PROGRESS_DOC_ID = 'default';
+/** One account: keyed by lowercased email, so it doubles as the lookup key. */
+export interface UserRecord {
+  _id: string;
+  name: string;
+  /** "salt:hash" from hashPassword() in @/lib/auth -- never a plaintext password. */
+  passwordHash: string;
+  createdAt: string;
+}
+
+export async function usersCollection(): Promise<Collection<UserRecord>> {
+  const client = await clientPromise();
+  return client.db(dbName).collection<UserRecord>('users');
+}

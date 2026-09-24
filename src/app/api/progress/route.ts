@@ -1,15 +1,23 @@
 /**
- * Progress sync endpoint, backed by MongoDB Atlas.
+ * Progress sync endpoint, backed by MongoDB Atlas -- one document per
+ * signed-in account, keyed by email.
  *
- * GET  /api/progress  -> the saved document (solved flags, notes, your code)
- * POST /api/progress  -> upsert the whole document
+ * GET  /api/progress  -> the caller's saved document (solved flags, notes, your code)
+ * POST /api/progress  -> upsert the caller's whole document
  *
- * The wire format is exactly the ProgressDoc the browser keeps locally, so the
- * local copy can be pushed up unchanged and works as an offline cache.
+ * Both require a valid session cookie (see @/lib/auth); an anonymous caller
+ * gets a 401, which the client already treats as "no cloud copy available"
+ * and falls back to local-only storage -- the same path it takes when Atlas
+ * itself is not configured.
+ *
+ * The wire format is exactly the ProgressDoc the browser keeps locally, so
+ * the local copy can be pushed up unchanged and works as an offline cache.
  */
 
 import { NextResponse } from 'next/server';
-import { PROGRESS_DOC_ID, mongoConfigured, progressCollection } from '@/lib/mongo';
+import { cookies } from 'next/headers';
+import { mongoConfigured, progressCollection } from '@/lib/mongo';
+import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
 import type { ProgressDoc } from '@/lib/types';
 
 // This route touches a live database, so it must never be statically cached.
@@ -19,6 +27,15 @@ function emptyDoc(): ProgressDoc {
   return { version: 1, problems: {}, updatedAt: new Date().toISOString() };
 }
 
+async function currentUserEmail(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  return verifySessionToken(token)?.email ?? null;
+}
+
+const notSignedIn = () =>
+  NextResponse.json({ error: 'Sign in to sync your progress.' }, { status: 401 });
+
 export async function GET() {
   if (!mongoConfigured) {
     return NextResponse.json(
@@ -27,9 +44,12 @@ export async function GET() {
     );
   }
 
+  const email = await currentUserEmail();
+  if (!email) return notSignedIn();
+
   try {
     const col = await progressCollection();
-    const found = await col.findOne({ _id: PROGRESS_DOC_ID });
+    const found = await col.findOne({ _id: email });
 
     // Nothing saved yet is a normal first-run state, not an error.
     if (!found) return NextResponse.json(emptyDoc());
@@ -55,6 +75,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const email = await currentUserEmail();
+  if (!email) return notSignedIn();
+
   let doc: ProgressDoc;
   try {
     doc = (await request.json()) as ProgressDoc;
@@ -71,7 +94,7 @@ export async function POST(request: Request) {
   try {
     const col = await progressCollection();
     await col.updateOne(
-      { _id: PROGRESS_DOC_ID },
+      { _id: email },
       { $set: { version: 1, problems: doc.problems, updatedAt: new Date().toISOString() } },
       { upsert: true },
     );

@@ -26,9 +26,11 @@ import {
   getSyncMessage,
   getSyncServerSnapshot,
   getSyncState,
+  setIdentity,
   subscribeSync,
   type SyncState,
 } from './storage';
+import { useAuth } from './useAuth';
 import type { ProblemProgress, ProgressDoc } from './types';
 
 interface ProgressContextValue {
@@ -65,20 +67,38 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     updatedAt: '',
   });
   const [ready, setReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
-  // Load once on mount.
+  // (Re)load whenever the signed-in identity settles or changes -- on first
+  // mount once the "am I already signed in?" check completes, and again on
+  // every sign-in/sign-out afterward. Each identity has its own local cache
+  // (see setIdentity in storage.ts) and, if signed in, its own Atlas
+  // document, so switching identities pulls a genuinely different document
+  // rather than mixing one account's cache into another's.
   useEffect(() => {
+    if (authLoading) return; // wait for the session check before loading anything
     let cancelled = false;
+
+    // Point storage at the right local cache *before* loading -- load() and
+    // the debounced save effect below both read this module-level identity,
+    // so it must already be correct by the time either one runs.
+    setIdentity(user?.email ?? 'anon');
+
     activeStore.load().then((loaded) => {
       if (!cancelled) {
+        // Neither `doc` nor `ready` changes synchronously above, so the
+        // debounced save effect (keyed on both) does not fire again until
+        // this resolves -- there is no window where it could save the
+        // outgoing identity's document under the new one's key.
         setDoc(loaded);
         setReady(true);
       }
     });
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, user?.email]);
 
   // Debounced persistence. The timer is reset on every change, so a burst of
   // keystrokes results in a single write once typing stops.

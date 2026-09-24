@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AuthPanel from '@/components/AuthPanel';
 
 /** Switches between the two question banks. Shown at the top of each sidebar. */
 export default function SectionNav({ active }: { active: 'dsa' | 'ai' }) {
@@ -7,9 +8,9 @@ export default function SectionNav({ active }: { active: 'dsa' | 'ai' }) {
   const off = 'text-muted hover:text-text';
 
   return (
-    <div className="mb-5">
+    <div>
       <h1 className="mb-2 text-lg font-bold tracking-tight">Interview Tracker</h1>
-      <div className="flex gap-1 rounded-lg border border-border bg-bg p-1">
+      <div className="mb-4 flex gap-1 rounded-lg border border-border bg-bg p-1">
         <Link href="/" className={`${base} ${active === 'dsa' ? on : off}`}>
           DSA
         </Link>
@@ -17,6 +18,8 @@ export default function SectionNav({ active }: { active: 'dsa' | 'ai' }) {
           AI / ML
         </Link>
       </div>
+      {/* AuthPanel carries its own bottom margin as the trailing element. */}
+      <AuthPanel />
     </div>
   );
 }

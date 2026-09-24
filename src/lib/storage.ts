@@ -15,7 +15,23 @@
 
 import type { ProblemProgress, ProgressDoc } from './types';
 
-const STORAGE_KEY = 'dsa-tracker:progress:v1';
+/**
+ * Which local copy to read/write. Scoped by account (email) rather than one
+ * fixed key, so that signing out and a different person signing in on the
+ * SAME browser never shows one account's cached progress as if it were the
+ * other's -- each identity gets its own localStorage entry. 'anon' is the
+ * shared key while nobody is signed in, matching the single shared cache
+ * this app always had before accounts existed.
+ */
+let identity = 'anon';
+
+export function setIdentity(id: string): void {
+  identity = id;
+}
+
+function storageKey(): string {
+  return `dsa-tracker:progress:v1:${identity}`;
+}
 
 export const EMPTY_PROGRESS: ProblemProgress = {
   solved: false,
@@ -44,7 +60,7 @@ function weight(doc: ProgressDoc): number {
 function readLocal(): ProgressDoc {
   if (typeof window === 'undefined') return emptyDoc();
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey());
     if (!raw) return emptyDoc();
     const parsed: unknown = JSON.parse(raw);
     return isProgressDoc(parsed) ? parsed : emptyDoc();
@@ -57,7 +73,7 @@ function readLocal(): ProgressDoc {
 function writeLocal(doc: ProgressDoc): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(doc));
+    window.localStorage.setItem(storageKey(), JSON.stringify(doc));
   } catch {
     // Quota exceeded or storage blocked; the Atlas copy still gets written.
   }

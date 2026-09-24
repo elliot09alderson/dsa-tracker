@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AuthProvider } from '@/lib/useAuth';
 import { ProgressProvider } from '@/lib/useProgress';
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site';
 import './globals.css';
@@ -55,8 +56,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        {/* One provider at the root so every page shares the same progress. */}
-        <ProgressProvider>{children}</ProgressProvider>
+        {/* AuthProvider outside ProgressProvider: progress needs to know who
+            (if anyone) is signed in, to load and save the right document. */}
+        <AuthProvider>
+          <ProgressProvider>{children}</ProgressProvider>
+        </AuthProvider>
       </body>
     </html>
   );
