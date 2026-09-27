@@ -28,6 +28,11 @@ import { runTests, stripTypes, type TestOutcome } from '@/lib/runTests';
 import { highlightCode } from '@/lib/highlightCode';
 import type { TestCase } from '@/lib/types';
 
+/** Opener -> matching closer, for auto-pairing and indent-on-Enter. */
+const OPEN_TO_CLOSE: Record<string, string> = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+const CLOSERS = new Set(Object.values(OPEN_TO_CLOSE));
+const QUOTES = new Set(['"', "'"]);
+
 interface Props {
   value: string;
   onChange(next: string): void;
@@ -36,9 +41,21 @@ interface Props {
   tests?: TestCase[];
   /** The function the runner should call. Required alongside `tests`. */
   functionName?: string;
+  /** Current solved state, shown as a toggle right in the editor toolbar. */
+  solved?: boolean;
+  /** Flips solved state; omitted where the caller has no progress to track. */
+  onToggleSolved?(): void;
 }
 
-export default function CodeEditor({ value, onChange, onReset, tests, functionName }: Props) {
+export default function CodeEditor({
+  value,
+  onChange,
+  onReset,
+  tests,
+  functionName,
+  solved,
+  onToggleSolved,
+}: Props) {
   const [logs, setLogs] = useState<string[]>([]);
   const [outcomes, setOutcomes] = useState<TestOutcome[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,19 +70,123 @@ export default function CodeEditor({ value, onChange, onReset, tests, functionNa
     highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
   };
 
-  /** Tab should indent, not move focus out of the editor. */
+  /**
+   * Classic editor behaviours layered onto the plain textarea:
+   *  - Tab indents instead of moving focus out.
+   *  - Enter continues the current line's indent, and adds a level after an
+   *    opener; Enter right inside an empty `{}`/`[]`/`()` pair splits it onto
+   *    three lines with the closer dedented, caret left on the middle line.
+   *  - Typing an opening bracket or quote inserts its match and leaves the
+   *    caret between them; typing the closing character where one is already
+   *    sitting (from auto-pairing) types over it instead of doubling up.
+   *  - Backspace on an empty pair (caret between `{` and `}` etc.) removes
+   *    both sides at once.
+   */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key !== 'Tab') return;
-    e.preventDefault();
-
     const el = e.currentTarget;
     const { selectionStart: start, selectionEnd: end } = el;
-    onChange(`${value.slice(0, start)}  ${value.slice(end)}`);
 
-    // Put the caret after the two spaces we just inserted.
-    requestAnimationFrame(() => {
-      el.selectionStart = el.selectionEnd = start + 2;
-    });
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      onChange(`${value.slice(0, start)}  ${value.slice(end)}`);
+      requestAnimationFrame(() => {
+        el.selectionStart = el.selectionEnd = start + 2;
+      });
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      const indent = value.slice(lineStart, start).match(/^[ \t]*/)?.[0] ?? '';
+      const charBefore = value[start - 1];
+      const charAfter = value[end];
+      const opensNewBlock = charBefore !== undefined && charBefore in OPEN_TO_CLOSE;
+
+      if (opensNewBlock && charAfter === OPEN_TO_CLOSE[charBefore]) {
+        // Caret is right inside a freshly-opened, still-empty pair: split
+        // it onto three lines instead of just continuing the indent.
+        const inner = `${indent}  `;
+        const insertion = `\n${inner}\n${indent}`;
+        onChange(value.slice(0, start) + insertion + value.slice(end));
+        const caret = start + 1 + inner.length;
+        requestAnimationFrame(() => {
+          el.selectionStart = el.selectionEnd = caret;
+        });
+        return;
+      }
+
+      const insertion = `\n${indent}${opensNewBlock ? '  ' : ''}`;
+      onChange(value.slice(0, start) + insertion + value.slice(end));
+      const caret = start + insertion.length;
+      requestAnimationFrame(() => {
+        el.selectionStart = el.selectionEnd = caret;
+      });
+      return;
+    }
+
+    if (e.key in OPEN_TO_CLOSE) {
+      const opener = e.key;
+      const closer = OPEN_TO_CLOSE[opener];
+      const isQuote = QUOTES.has(opener);
+
+      if (start !== end) {
+        // Wrap the selection in the pair rather than replacing it.
+        e.preventDefault();
+        const selected = value.slice(start, end);
+        onChange(`${value.slice(0, start)}${opener}${selected}${closer}${value.slice(end)}`);
+        requestAnimationFrame(() => {
+          el.selectionStart = start + 1;
+          el.selectionEnd = start + 1 + selected.length;
+        });
+        return;
+      }
+
+      if (isQuote && value[start] === opener) {
+        // A matching quote is already sitting here (from auto-pairing) --
+        // type over it instead of inserting a second one.
+        e.preventDefault();
+        requestAnimationFrame(() => {
+          el.selectionStart = el.selectionEnd = start + 1;
+        });
+        return;
+      }
+
+      // Typing a quote right after a letter/number is usually an apostrophe
+      // (don't, it's) rather than the start of a string -- don't auto-pair.
+      if (isQuote && /[A-Za-z0-9_]/.test(value[start - 1] ?? '')) {
+        return;
+      }
+
+      e.preventDefault();
+      onChange(`${value.slice(0, start)}${opener}${closer}${value.slice(start)}`);
+      requestAnimationFrame(() => {
+        el.selectionStart = el.selectionEnd = start + 1;
+      });
+      return;
+    }
+
+    if (CLOSERS.has(e.key) && start === end && value[start] === e.key) {
+      // Closing character already sits here (auto-inserted) -- step over it.
+      e.preventDefault();
+      requestAnimationFrame(() => {
+        el.selectionStart = el.selectionEnd = start + 1;
+      });
+      return;
+    }
+
+    if (e.key === 'Backspace' && start === end && start > 0) {
+      const before = value[start - 1];
+      const after = value[start];
+      if (OPEN_TO_CLOSE[before] === after) {
+        e.preventDefault();
+        onChange(value.slice(0, start - 1) + value.slice(start + 1));
+        requestAnimationFrame(() => {
+          el.selectionStart = el.selectionEnd = start - 1;
+        });
+      }
+    }
   };
 
   const clearOutput = () => {
@@ -126,6 +247,18 @@ export default function CodeEditor({ value, onChange, onReset, tests, functionNa
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <span className="text-xs font-semibold text-muted">Your attempt</span>
         <div className="flex gap-2">
+          {onToggleSolved && (
+            <button
+              onClick={onToggleSolved}
+              className={`rounded-md border px-3 py-1 text-xs font-semibold transition ${
+                solved
+                  ? 'border-easy bg-easy/15 text-easy'
+                  : 'border-border text-muted hover:border-muted hover:text-text'
+              }`}
+            >
+              {solved ? '✓ Solved' : 'Mark solved'}
+            </button>
+          )}
           {canTest && (
             <button
               onClick={handleRunTests}

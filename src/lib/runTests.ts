@@ -36,9 +36,17 @@ export interface TestRunResult {
  * code that follows it.
  */
 export function stripTypes(source: string): string {
-  // Horizontal whitespace only -- never let an annotation match run across a
-  // newline and eat the following statement.
-  const TYPE = "[A-Za-z_$][\\w$.<>\\[\\]|,'\" \\t]*";
+  // A single identifier, optionally with one level of generic arguments
+  // (`Map<string, number>`), an array suffix (`number[]`), and/or union
+  // members (`TreeNode | null`). Commas are only ever matched *inside* a
+  // `<...>` pair here -- never bare -- so a type annotation can't run past
+  // the comma that separates it from the next, untyped parameter (e.g.
+  // `function fib(n: number, dp = [])`: without this, a greedy TYPE that
+  // also accepted bare commas would swallow ", dp" as if it were part of
+  // `n`'s type and delete the `dp` parameter entirely).
+  const IDENT = "[A-Za-z_$][\\w$.\\[\\]]*";
+  const GENERIC = '(?:<[^<>]*>)?';
+  const TYPE = `${IDENT}${GENERIC}(?:\\[\\])?(?:\\s*\\|\\s*${IDENT}${GENERIC}(?:\\[\\])?)*`;
 
   return (
     source
@@ -50,12 +58,12 @@ export function stripTypes(source: string): string {
       // Return annotations before a body or an arrow:
       //   ): number[] {   ->  ) {
       //   ): boolean =>   ->  ) =>
-      .replace(new RegExp(`\\)[ \\t]*:[ \\t]*${TYPE}(?=[ \\t]*(\\{|=>))`, 'g'), ')')
+      .replace(new RegExp(`\\)[ \\t]*:[ \\t]*${TYPE}[ \\t]*(?=[ \\t]*(\\{|=>))`, 'g'), ')')
       // Parameter and variable annotations: (a: number[], b: string) -> (a, b)
-      .replace(new RegExp(`([A-Za-z_$][\\w$]*)[ \\t]*:[ \\t]*${TYPE}(?=[,)=])`, 'g'), '$1')
+      .replace(new RegExp(`([A-Za-z_$][\\w$]*)[ \\t]*:[ \\t]*${TYPE}[ \\t]*(?=[,)=])`, 'g'), '$1')
       // Standalone declarations, with or without an initializer:
       //   let x: number | null = null;   and   let result: number;
-      .replace(new RegExp(`\\b(let|const|var)[ \\t]+([A-Za-z_$][\\w$]*)[ \\t]*:[ \\t]*${TYPE}(?=[=;])`, 'g'), '$1 $2 ')
+      .replace(new RegExp(`\\b(let|const|var)[ \\t]+([A-Za-z_$][\\w$]*)[ \\t]*:[ \\t]*${TYPE}[ \\t]*(?=[=;])`, 'g'), '$1 $2 ')
       // "as T" casts.
       .replace(/\s+as\s+[A-Za-z_$][\w$.<>[\]|]*/g, '')
       // Non-null assertions: stack.pop()! and node!.next

@@ -256,6 +256,10 @@ export default function ProblemView({ problem, solution, prevId, nextId }: Props
               value={code}
               onChange={(next) => update(problem.id, { code: next })}
               onReset={() => update(problem.id, { code: solution?.starter ?? '' })}
+              tests={solution?.tests}
+              functionName={solution?.functionName}
+              solved={progress.solved}
+              onToggleSolved={() => update(problem.id, { solved: !progress.solved })}
             />
           </div>
 

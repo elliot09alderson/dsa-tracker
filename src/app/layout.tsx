@@ -55,7 +55,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
-      <body>
+      {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject
+          attributes like cz-shortcut-listen onto <body> before React
+          hydrates, which otherwise trips a false-positive mismatch warning. */}
+      <body suppressHydrationWarning>
         {/* AuthProvider outside ProgressProvider: progress needs to know who
             (if anyone) is signed in, to load and save the right document. */}
         <AuthProvider>
