@@ -21,6 +21,11 @@
  *                pass/fail. Available when the problem ships test cases.
  *   Run       -- plain execution, capturing console.log. Useful for poking at
  *                something without a harness.
+ *
+ * Format hands the current text to Prettier and swaps in the result. Prettier
+ * itself is dynamically imported so it never costs anything until the button
+ * is actually clicked -- the editor's own bundle stays as small as the rest
+ * of this file's dependency-free approach promises.
  */
 
 import { useRef, useState } from 'react';
@@ -59,6 +64,7 @@ export default function CodeEditor({
   const [logs, setLogs] = useState<string[]>([]);
   const [outcomes, setOutcomes] = useState<TestOutcome[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [formatting, setFormatting] = useState(false);
   const highlightRef = useRef<HTMLPreElement>(null);
 
   const canTest = Boolean(tests?.length && functionName);
@@ -238,6 +244,33 @@ export default function CodeEditor({
     }
   };
 
+  const handleFormat = async () => {
+    setFormatting(true);
+    setError(null);
+    try {
+      const [{ format }, tsPlugin, estreePlugin] = await Promise.all([
+        import('prettier/standalone'),
+        import('prettier/plugins/typescript'),
+        import('prettier/plugins/estree'),
+      ]);
+      const formatted = await format(value, {
+        parser: 'typescript',
+        plugins: [tsPlugin, estreePlugin],
+        semi: true,
+        singleQuote: true,
+        tabWidth: 2,
+        printWidth: 90,
+      });
+      onChange(formatted.replace(/\n+$/, ''));
+    } catch (err) {
+      // Almost always a syntax error in what's currently typed -- Prettier
+      // can't format code it can't parse.
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setFormatting(false);
+    }
+  };
+
   const passed = outcomes?.filter((o) => o.passed).length ?? 0;
   const total = outcomes?.length ?? 0;
   const allPassed = outcomes !== null && total > 0 && passed === total;
@@ -276,6 +309,13 @@ export default function CodeEditor({
             }`}
           >
             Run
+          </button>
+          <button
+            onClick={() => void handleFormat()}
+            disabled={formatting}
+            className="rounded-md border border-border px-3 py-1 text-xs text-muted transition hover:border-muted hover:text-text disabled:opacity-60"
+          >
+            {formatting ? 'Formatting…' : 'Format'}
           </button>
           <button
             onClick={() => {
