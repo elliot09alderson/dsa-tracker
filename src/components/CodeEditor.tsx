@@ -29,7 +29,8 @@
  */
 
 import { useRef, useState } from 'react';
-import { runTests, stripTypes, type TestOutcome } from '@/lib/runTests';
+import type { TestOutcome } from '@/lib/runTests';
+import { runTestsSandboxed, runConsoleSandboxed } from '@/lib/runInSandbox';
 import { highlightCode } from '@/lib/highlightCode';
 import type { TestCase } from '@/lib/types';
 
@@ -65,6 +66,7 @@ export default function CodeEditor({
   const [outcomes, setOutcomes] = useState<TestOutcome[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formatting, setFormatting] = useState(false);
+  const [running, setRunning] = useState(false);
   const highlightRef = useRef<HTMLPreElement>(null);
 
   const canTest = Boolean(tests?.length && functionName);
@@ -201,47 +203,31 @@ export default function CodeEditor({
     setError(null);
   };
 
-  const handleRunTests = () => {
+  const handleRunTests = async () => {
     if (!tests || !functionName) return;
     clearOutput();
-
-    const result = runTests(value, functionName, tests);
+    setRunning(true);
+    const result = await runTestsSandboxed(value, functionName, tests);
+    setRunning(false);
     setError(result.error);
     setOutcomes(result.outcomes);
   };
 
-  const handleRun = () => {
+  const handleRun = async () => {
     clearOutput();
-    const captured: string[] = [];
-
-    const format = (v: unknown) => {
-      if (typeof v === 'string') return v;
-      try {
-        return JSON.stringify(v);
-      } catch {
-        return String(v);
-      }
-    };
-
-    try {
-      // Give the snippet its own console so output is captured here rather
-      // than disappearing into the browser devtools.
-      const sandboxConsole = {
-        log: (...args: unknown[]) => captured.push(args.map(format).join(' ')),
-        error: (...args: unknown[]) => captured.push(`Error: ${args.map(format).join(' ')}`),
-      };
-
-      new Function('console', stripTypes(value))(sandboxConsole);
-
-      setLogs(
-        captured.length
-          ? captured
+    setRunning(true);
+    // Runs in a Web Worker (see runInSandbox.ts) rather than inline, so a
+    // stray infinite loop in the snippet times out instead of freezing the tab.
+    const result = await runConsoleSandboxed(value);
+    setRunning(false);
+    setError(result.error);
+    setLogs(
+      result.error
+        ? result.logs
+        : result.logs.length
+          ? result.logs
           : ['(ran with no output — call your function and console.log the result)'],
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setLogs(captured);
-    }
+    );
   };
 
   const handleFormat = async () => {
@@ -294,21 +280,23 @@ export default function CodeEditor({
           )}
           {canTest && (
             <button
-              onClick={handleRunTests}
-              className="rounded-md bg-accent px-3 py-1 text-xs font-semibold text-bg transition hover:opacity-90"
+              onClick={() => void handleRunTests()}
+              disabled={running}
+              className="rounded-md bg-accent px-3 py-1 text-xs font-semibold text-bg transition hover:opacity-90 disabled:opacity-60"
             >
-              Run tests
+              {running ? 'Running…' : 'Run tests'}
             </button>
           )}
           <button
-            onClick={handleRun}
-            className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+            onClick={() => void handleRun()}
+            disabled={running}
+            className={`rounded-md px-3 py-1 text-xs font-semibold transition disabled:opacity-60 ${
               canTest
                 ? 'border border-border text-muted hover:border-muted hover:text-text'
                 : 'bg-accent text-bg hover:opacity-90'
             }`}
           >
-            Run
+            {running ? 'Running…' : 'Run'}
           </button>
           <button
             onClick={() => void handleFormat()}
