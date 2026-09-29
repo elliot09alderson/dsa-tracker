@@ -146,6 +146,12 @@ export default function AIDashboard() {
       </aside>
 
       <main className="flex-1 p-4 lg:h-screen lg:overflow-y-auto lg:p-6">
+        <h1 className="mb-1 text-xl font-bold tracking-tight">AI &amp; ML Interview Questions</h1>
+        <p className="mb-4 text-sm text-muted">
+          {TOTAL_AI_QUESTIONS} AI and machine learning interview questions with written answers,
+          organised by category.
+        </p>
+
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <input
             value={search}

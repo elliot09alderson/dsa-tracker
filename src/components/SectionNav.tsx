@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import AuthPanel from '@/components/AuthPanel';
 
-/** Switches between the two question banks. Shown at the top of each sidebar. */
+/**
+ * Switches between the two question banks. Shown at the top of each
+ * sidebar, on both dashboards -- so its brand mark is a <p>, not an <h1>.
+ * Each dashboard owns the one real, keyword-specific <h1> for its page in
+ * its own main content instead.
+ */
 export default function SectionNav({ active }: { active: 'dsa' | 'ai' }) {
   const base = 'flex-1 rounded-md px-3 py-1.5 text-center text-xs font-semibold transition';
   const on = 'bg-accent text-bg';
@@ -9,7 +14,7 @@ export default function SectionNav({ active }: { active: 'dsa' | 'ai' }) {
 
   return (
     <div>
-      <h1 className="mb-2 text-lg font-bold tracking-tight">Interview Tracker</h1>
+      <p className="mb-2 text-lg font-bold tracking-tight">Interview Tracker</p>
       <div className="mb-4 flex gap-1 rounded-lg border border-border bg-bg p-1">
         <Link href="/" className={`${base} ${active === 'dsa' ? on : off}`}>
           DSA

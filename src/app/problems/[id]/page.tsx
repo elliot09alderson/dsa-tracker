@@ -28,7 +28,7 @@ export async function generateMetadata({
   // actually shows in a search result snippet.
   const description = solution
     ? truncate(solution.statement, 155)
-    : `${problem.title} (${problem.difficulty}) -- a ${problem.topicLabel} interview problem from ${problem.platform}.`;
+    : `${problem.title} (${problem.difficulty}) -- a ${problem.topicLabel} interview problem from ${problem.platform}. Practice it in JavaScript or TypeScript with a built-in test runner.`;
 
   const url = `${SITE_URL}/problems/${problem.id}`;
   const title = `${problem.title} (${problem.difficulty})`;

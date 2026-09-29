@@ -36,7 +36,7 @@ export async function generateMetadata({
 
   const count = PROBLEMS.filter((p) => p.topic === topic.key).length;
   const title = `${topic.label} Interview Questions`;
-  const description = `${count} ${topic.label} interview problems with brute-force, better and optimal solutions -- company tags included, and a practice editor for each one.`;
+  const description = `${count} ${topic.label} interview problems to practice in JavaScript or TypeScript, with brute-force, better and optimal solutions and company tags.`;
   const url = `${SITE_URL}/topics/${slug}`;
 
   return {
@@ -97,8 +97,9 @@ export default async function TopicPage({ params }: { params: Promise<{ topic: s
 
       <h1 className="mt-3 mb-2 text-2xl font-bold tracking-tight">{topic.label} Interview Questions</h1>
       <p className="mb-6 text-sm text-muted">
-        {problems.length} problems with written solutions where available, sourced from LeetCode,
-        GeeksforGeeks and InterviewBit. {solvedCount} solved so far in this browser.
+        {problems.length} problems to practice in JavaScript or TypeScript, with written
+        solutions where available, sourced from LeetCode, GeeksforGeeks and InterviewBit.{' '}
+        {solvedCount} solved so far in this browser.
       </p>
 
       <ul className="overflow-hidden rounded-lg border border-border bg-surface">

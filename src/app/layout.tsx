@@ -4,6 +4,10 @@ import { ProgressProvider } from '@/lib/useProgress';
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site';
 import './globals.css';
 
+// Repeated across the default title, OpenGraph and Twitter card below --
+// pulled out once so the three can't drift out of sync.
+const DEFAULT_TITLE = `${SITE_NAME} — 261 DSA Problems in JavaScript & TypeScript`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -11,12 +15,17 @@ export const metadata: Metadata = {
     // reads "Majority Element | DSA Tracker" in a search result rather than
     // the generic site title repeated 313 times across the catalogue.
     template: `%s | ${SITE_NAME}`,
-    default: `${SITE_NAME} — 261 DSA Interview Problems with Solutions`,
+    default: DEFAULT_TITLE,
   },
   description: SITE_DESCRIPTION,
   keywords: [
     'dsa interview questions',
     'data structures and algorithms practice',
+    'javascript dsa',
+    'typescript dsa',
+    'dsa in javascript',
+    'javascript data structures and algorithms',
+    'typescript data structures and algorithms',
     'leetcode solutions',
     'coding interview prep',
     'faang interview questions',
@@ -24,13 +33,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — 261 DSA Interview Problems with Solutions`,
+    title: DEFAULT_TITLE,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
   },
   twitter: {
     card: 'summary',
-    title: `${SITE_NAME} — 261 DSA Interview Problems with Solutions`,
+    title: DEFAULT_TITLE,
     description: SITE_DESCRIPTION,
   },
 };

@@ -212,6 +212,15 @@ export default function Dashboard() {
 
       {/* ---------------- Problem list ---------------- */}
       <main className="flex-1 p-4 lg:h-screen lg:overflow-y-auto lg:p-6">
+        <h1 className="mb-1 text-xl font-bold tracking-tight">
+          DSA Practice Problems in JavaScript &amp; TypeScript
+        </h1>
+        <p className="mb-4 text-sm text-muted">
+          {TOTAL_PROBLEMS} data structures and algorithms interview problems, each solvable in
+          the built-in JavaScript/TypeScript editor with brute-force, better and optimal
+          solutions where written.
+        </p>
+
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <input
             value={search}

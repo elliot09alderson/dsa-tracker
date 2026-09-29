@@ -16,4 +16,4 @@ export const SITE_URL = VERCEL_URL
 export const SITE_NAME = 'DSA Tracker';
 
 export const SITE_DESCRIPTION =
-  '261 data structures & algorithms interview problems with brute-force, better and optimal solutions, company tags, and a built-in practice editor with a test runner.';
+  '261 DSA interview problems to practice in JavaScript or TypeScript, with brute-force, better and optimal solutions, company tags and a test runner.';
