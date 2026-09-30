@@ -22,6 +22,7 @@ import {
 import { SOLUTION_COUNT } from '@/data/solutions';
 import { useProgress } from '@/lib/useProgress';
 import SectionNav from '@/components/SectionNav';
+import GoalsPanel from '@/components/GoalsPanel';
 import { topicColor } from '@/lib/topicColors';
 import { topicKeyToSlug } from '@/lib/topicSlug';
 import type { Difficulty } from '@/lib/types';
@@ -110,6 +111,8 @@ export default function Dashboard() {
             />
           </div>
         </div>
+
+        <GoalsPanel />
 
         {/* Status filter */}
         <FilterGroup label="Status">

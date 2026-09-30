@@ -113,10 +113,32 @@ export interface ProblemProgress {
   updatedAt: string;
 }
 
+/**
+ * A self-set study goal: "N questions from this topic, between these two
+ * dates" plus the reason the user typed for themselves. Progress toward it
+ * is never stored -- it is derived on read from `solvedIds` and the topic's
+ * catalogue, so a goal never goes stale relative to problems solved outside
+ * of it.
+ */
+export interface Goal {
+  id: string;
+  /** Topic.key, e.g. "Searching" for "Searching (Binary Search)". */
+  topic: string;
+  /** How many problems from the topic this goal targets. */
+  targetCount: number;
+  /** Plain "YYYY-MM-DD" dates -- no time component, no timezone math. */
+  fromDate: string;
+  toDate: string;
+  /** The user's own reason for the goal, shown back to them while it runs. */
+  motivation: string;
+  createdAt: string;
+}
+
 /** The whole progress document -- this is what will live in MongoDB later. */
 export interface ProgressDoc {
   version: 1;
   problems: Record<string, ProblemProgress>;
+  goals: Goal[];
   updatedAt: string;
 }
 

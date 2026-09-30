@@ -42,12 +42,22 @@ export const EMPTY_PROGRESS: ProblemProgress = {
 };
 
 function emptyDoc(): ProgressDoc {
-  return { version: 1, problems: {}, updatedAt: '' };
+  return { version: 1, problems: {}, goals: [], updatedAt: '' };
 }
 
 function isProgressDoc(value: unknown): value is ProgressDoc {
   const doc = value as ProgressDoc | null;
   return Boolean(doc && doc.version === 1 && typeof doc.problems === 'object' && doc.problems !== null);
+}
+
+/**
+ * `goals` was added after `problems`, so a doc cached (locally, in Atlas, or
+ * in an exported backup) before that lacks the field entirely. Every read
+ * path runs its result through this so the rest of the app can assume
+ * `doc.goals` is always a real array.
+ */
+function normalizeDoc(doc: ProgressDoc): ProgressDoc {
+  return Array.isArray(doc.goals) ? doc : { ...doc, goals: [] };
 }
 
 /** How many problems carry any recorded state -- used to break load ties. */
@@ -63,7 +73,7 @@ function readLocal(): ProgressDoc {
     const raw = window.localStorage.getItem(storageKey());
     if (!raw) return emptyDoc();
     const parsed: unknown = JSON.parse(raw);
-    return isProgressDoc(parsed) ? parsed : emptyDoc();
+    return isProgressDoc(parsed) ? normalizeDoc(parsed) : emptyDoc();
   } catch {
     // Private browsing, cleared site data, or corrupt JSON.
     return emptyDoc();
@@ -134,11 +144,12 @@ export const hybridStore: ProgressStore = {
         return local;
       }
 
-      const remote: unknown = await res.json();
-      if (!isProgressDoc(remote)) {
+      const remoteRaw: unknown = await res.json();
+      if (!isProgressDoc(remoteRaw)) {
         setSync('local-only', 'Atlas returned an unexpected document');
         return local;
       }
+      const remote = normalizeDoc(remoteRaw);
 
       // Prefer the newer copy. If timestamps tie or are missing, prefer the
       // one holding more records rather than picking arbitrarily.
@@ -199,7 +210,7 @@ export function exportProgress(doc: ProgressDoc): string {
 export function parseProgressBackup(text: string): ProgressDoc | null {
   try {
     const parsed: unknown = JSON.parse(text);
-    return isProgressDoc(parsed) ? parsed : null;
+    return isProgressDoc(parsed) ? normalizeDoc(parsed) : null;
   } catch {
     return null;
   }

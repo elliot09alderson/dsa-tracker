@@ -8,10 +8,12 @@
  */
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 
 export default function AuthPanel() {
   const { user, loading, login, signup, logout } = useAuth();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [name, setName] = useState('');
@@ -38,6 +40,9 @@ export default function AuthPanel() {
     if (result.ok) {
       setOpen(false);
       reset();
+      // The Goals dashboard is the one page that only makes sense once
+      // there's an account to sync it, so that's where signing in lands you.
+      router.push('/goals');
     } else {
       setError(result.error);
     }

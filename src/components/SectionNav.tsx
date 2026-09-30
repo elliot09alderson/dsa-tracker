@@ -7,8 +7,8 @@ import AuthPanel from '@/components/AuthPanel';
  * Each dashboard owns the one real, keyword-specific <h1> for its page in
  * its own main content instead.
  */
-export default function SectionNav({ active }: { active: 'dsa' | 'ai' }) {
-  const base = 'flex-1 rounded-md px-3 py-1.5 text-center text-xs font-semibold transition';
+export default function SectionNav({ active }: { active: 'dsa' | 'ai' | 'goals' }) {
+  const base = 'flex-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold transition';
   const on = 'bg-accent text-bg';
   const off = 'text-muted hover:text-text';
 
@@ -21,6 +21,9 @@ export default function SectionNav({ active }: { active: 'dsa' | 'ai' }) {
         </Link>
         <Link href="/ai" className={`${base} ${active === 'ai' ? on : off}`}>
           AI / ML
+        </Link>
+        <Link href="/goals" className={`${base} ${active === 'goals' ? on : off}`}>
+          Goals
         </Link>
       </div>
       {/* AuthPanel carries its own bottom margin as the trailing element. */}

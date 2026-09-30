@@ -24,7 +24,7 @@ import type { ProgressDoc } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 function emptyDoc(): ProgressDoc {
-  return { version: 1, problems: {}, updatedAt: new Date().toISOString() };
+  return { version: 1, problems: {}, goals: [], updatedAt: new Date().toISOString() };
 }
 
 async function currentUserEmail(): Promise<string | null> {
@@ -56,7 +56,9 @@ export async function GET() {
 
     const { _id, ...doc } = found;
     void _id; // the client does not need Mongo's key
-    return NextResponse.json(doc);
+    // `goals` was added after this record shape shipped -- a document saved
+    // before that has no such field in Mongo.
+    return NextResponse.json({ ...doc, goals: Array.isArray(doc.goals) ? doc.goals : [] });
   } catch (err) {
     // Surface the reason (bad password, IP not allow-listed, cluster paused)
     // so the banner in the UI can say something useful.
@@ -91,14 +93,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unexpected document shape' }, { status: 400 });
   }
 
+  const goals = Array.isArray(doc.goals) ? doc.goals : [];
+
   try {
     const col = await progressCollection();
     await col.updateOne(
       { _id: email },
-      { $set: { version: 1, problems: doc.problems, updatedAt: new Date().toISOString() } },
+      { $set: { version: 1, problems: doc.problems, goals, updatedAt: new Date().toISOString() } },
       { upsert: true },
     );
-    return NextResponse.json({ ok: true, problems: Object.keys(doc.problems).length });
+    return NextResponse.json({ ok: true, problems: Object.keys(doc.problems).length, goals: goals.length });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to save progress' },

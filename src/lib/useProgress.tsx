@@ -31,7 +31,7 @@ import {
   type SyncState,
 } from './storage';
 import { useAuth } from './useAuth';
-import type { ProblemProgress, ProgressDoc } from './types';
+import type { Goal, ProblemProgress, ProgressDoc } from './types';
 
 interface ProgressContextValue {
   /** False until the saved document has been read back from storage. */
@@ -50,6 +50,12 @@ interface ProgressContextValue {
   doc: ProgressDoc;
   /** Replace everything, used by the import-backup button. */
   replace(doc: ProgressDoc): void;
+  /** Every goal the user has set, most recently created first. */
+  goals: Goal[];
+  /** Add a new goal; id and createdAt are generated here. */
+  addGoal(input: Omit<Goal, 'id' | 'createdAt'>): void;
+  /** Remove a goal, e.g. one set up by mistake. */
+  deleteGoal(id: string): void;
   /** Whether the Atlas copy is up to date. */
   sync: SyncState;
   /** Why syncing failed, when it did. */
@@ -64,6 +70,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [doc, setDoc] = useState<ProgressDoc>({
     version: 1,
     problems: {},
+    goals: [],
     updatedAt: '',
   });
   const [ready, setReady] = useState(false);
@@ -157,6 +164,27 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   const replace = useCallback((next: ProgressDoc) => setDoc(next), []);
 
+  const addGoal = useCallback((input: Omit<Goal, 'id' | 'createdAt'>) => {
+    const goal: Goal = {
+      ...input,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    setDoc((prev) => ({
+      ...prev,
+      goals: [goal, ...prev.goals],
+      updatedAt: new Date().toISOString(),
+    }));
+  }, []);
+
+  const deleteGoal = useCallback((id: string) => {
+    setDoc((prev) => ({
+      ...prev,
+      goals: prev.goals.filter((g) => g.id !== id),
+      updatedAt: new Date().toISOString(),
+    }));
+  }, []);
+
   // Recomputed only when the document changes, not on every render.
   const solvedIds = useMemo(
     () => new Set(Object.entries(doc.problems).filter(([, p]) => p.solved).map(([id]) => id)),
@@ -173,8 +201,22 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const syncMessage = useSyncExternalStore(subscribeSync, getSyncMessage, () => '');
 
   const value = useMemo(
-    () => ({ ready, get, update, toggleSolved, solvedIds, revisitIds, doc, replace, sync, syncMessage }),
-    [ready, get, update, toggleSolved, solvedIds, revisitIds, doc, replace, sync, syncMessage],
+    () => ({
+      ready,
+      get,
+      update,
+      toggleSolved,
+      solvedIds,
+      revisitIds,
+      doc,
+      replace,
+      goals: doc.goals,
+      addGoal,
+      deleteGoal,
+      sync,
+      syncMessage,
+    }),
+    [ready, get, update, toggleSolved, solvedIds, revisitIds, doc, replace, addGoal, deleteGoal, sync, syncMessage],
   );
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
